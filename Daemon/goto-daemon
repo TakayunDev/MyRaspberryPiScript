@@ -1,0 +1,62 @@
+#!/bin/bash
+# chkconfig: 2345 99 01
+# description: goto-daemon.
+### BEGIN INIT INFO
+# Provides:          goto-daemon
+# Required-Start:    $local_fs
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: goto-daemon
+### END INIT INFO
+
+LOGPATH=/home/pi/log
+APPPATH=/home/pi/nodejs/serial/serial
+#PIDPATH=/home/pi/run
+PIDPATH=/var/run/goto-daemon
+USER=pi
+USERDIR=/home/pi
+
+start() {
+    if [ ! -d $PIDPATH/ ]; then
+        mkdir $PIDPATH
+        chown $USER:$USER /var/run/goto-daemon
+    fi
+    if [ ! -f $PIDPATH/goto-daemon.pid ]; then
+        echo -n "Starting Goto-Server: "
+        su -l $USER -c "PATH=$USERDIR/.nodebrew/current/bin:$PATH; \
+            /home/pi/.nodebrew/current/bin/forever start \
+            -p $PIDPATH/forever \
+            --pidFile $PIDPATH/goto-daemon.pid \
+            -l $LOGPATH/logfile.log -a \
+            $APPPATH/bin/www"
+        echo "[OK]"
+    else
+        echo "Error: Already starting Goto-Server."
+    fi
+    return 0;
+}
+stop() {
+    if [ -f $PIDPATH/goto-daemon.pid ]; then
+        echo -n "Stopping Goto-Server: "
+        su -l $USER -c "PATH=$USERDIR/.nodebrew/current/bin:$PATH; \
+            /home/pi/.nodebrew/current/bin/forever stop \
+            $APPPATH/bin/www"
+        echo "[OK]"
+    else
+        echo "Error: Already stopping Goto-Server."
+    fi
+    return 0;
+}
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+esac
